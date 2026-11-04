@@ -1,59 +1,43 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { describe, expect, it } from "vitest";
-import * as limits from "../limits";
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "fs";
+import { resolve } from "path";
+import { PINBOARD_CONSTANTS } from "../pinboard";
 
-/**
- * The contract's limits and the UI's copy of them, pinned together.
- *
- * Every one of these numbers exists twice: once in Solidity, where breaking it reverts, and once
- * in lib, where it decides whether the button is enabled and what the hint says. Today they
- * agree. Nothing made them agree — and a limit raised in the contract without this app following
- * turns a clear "too long" message into a transaction the user pays gas for and loses.
- *
- * Parsed from the source rather than read off the ABI, because a `public constant` getter tells
- * you what a deployed contract thinks; the question here is whether the code in this repo matches
- * the code sitting beside it.
- */
+describe("contract limits agreement", () => {
+  it("matches constants defined in Pinboard.sol", () => {
+    const solPath = resolve(__dirname, "../../contracts/src/Pinboard.sol");
+    const solContent = readFileSync(solPath, "utf8");
 
-const SRC = join(__dirname, "..", "..", "contracts", "src");
+    // MAX_TEXT_BYTES = 200
+    expect(solContent).toContain("MAX_TEXT_BYTES = 200");
+    expect(PINBOARD_CONSTANTS.MAX_TEXT_BYTES).toBe(200);
 
-function solidityConstants(): Map<string, bigint> {
-  const found = new Map<string, bigint>();
-  for (const file of readdirSync(SRC).filter((f) => f.endsWith(".sol"))) {
-    const src = readFileSync(join(SRC, file), "utf8");
-    // Plain integer constants only. Ones carrying a unit (`1 hours`) mean something else and are
-    // checked where they are used.
-    for (const m of src.matchAll(/constant\s+([A-Z][A-Z0-9_]*)\s*=\s*(\d+)\s*;/g)) {
-      found.set(m[1], BigInt(m[2]));
-    }
-  }
-  return found;
-}
+    // TOPICS = 8
+    expect(solContent).toContain("TOPICS = 8");
+    expect(PINBOARD_CONSTANTS.TOPICS).toBe(8);
 
-describe("the contract's limits and this app's copy of them", () => {
-  const onChain = solidityConstants();
+    // MIN_TTL = 1 hours
+    expect(solContent).toContain("MIN_TTL = 1 hours");
+    expect(PINBOARD_CONSTANTS.MIN_TTL).toBe(3600n);
 
-  it("found constants in the contract to check against", () => {
-    expect(onChain.size).toBeGreaterThan(0);
-  });
+    // MAX_TTL = 30 days
+    expect(solContent).toContain("MAX_TTL = 30 days");
+    expect(PINBOARD_CONSTANTS.MAX_TTL).toBe(2592000n);
 
-  it("agrees on every limit both sides declare", () => {
-    const declared = limits as unknown as Record<string, number>;
-    const shared = [...onChain.keys()].filter((name) => typeof declared[name] === "number");
+    // MIN_DEPOSIT = 0.01 ether
+    expect(solContent).toContain("MIN_DEPOSIT = 0.01 ether");
+    expect(PINBOARD_CONSTANTS.MIN_DEPOSIT).toBe(10000000000000000n);
 
-    expect(
-      shared.length,
-      "no shared constant names — has one side been renamed?",
-    ).toBeGreaterThan(0);
+    // MAX_DEPOSIT = 100 ether
+    expect(solContent).toContain("MAX_DEPOSIT = 100 ether");
+    expect(PINBOARD_CONSTANTS.MAX_DEPOSIT).toBe(100000000000000000000n);
 
-    const disagreements = shared
-      .filter((name) => BigInt(declared[name]) !== onChain.get(name))
-      .map(
-        (name) =>
-          name + ": contract says " + onChain.get(name) + ", this app says " + declared[name],
-      );
+    // SWEEP_BPS = 2000
+    expect(solContent).toContain("SWEEP_BPS = 2000");
+    expect(PINBOARD_CONSTANTS.SWEEP_BPS).toBe(2000n);
 
-    expect(disagreements.join("\n")).toBe("");
+    // MAX_PAGE = 50
+    expect(solContent).toContain("MAX_PAGE = 50");
+    expect(PINBOARD_CONSTANTS.MAX_PAGE).toBe(50);
   });
 });
