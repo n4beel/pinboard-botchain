@@ -1,29 +1,35 @@
-import { HTMLAttributes } from "react";
+import React from "react";
 
-interface PanelProps extends HTMLAttributes<HTMLDivElement> {
-  elevated?: boolean;
-  noPadding?: boolean;
+export interface PanelProps extends React.HTMLAttributes<HTMLDivElement> {
+  heading?: React.ReactNode;
+  action?: React.ReactNode;
+  paper?: boolean;
 }
 
-export default function Panel({
-  elevated,
-  noPadding,
+export function Panel({
+  heading,
+  action,
+  paper = true,
   children,
   className = "",
-  style,
   ...props
 }: PanelProps) {
   return (
-    <div
-      className={["rounded-none", noPadding ? "" : "p-5", className].join(" ")}
-      style={{
-        background: elevated ? "var(--bg-elevated)" : "var(--bg-surface)",
-        border: "1px solid var(--border-subtle)",
-        ...style,
-      }}
+    <section
+      className={`bg-[var(--bg-surface)] text-[var(--text-primary)] ${
+        paper ? "border border-[var(--border-default)] shadow-[2px_3px_8px_rgba(46,13,24,0.12)] rounded-sm" : ""
+      } p-5 ${className}`}
       {...props}
     >
-      {children}
-    </div>
+      {(heading || action) && (
+        <header className="flex items-center justify-between gap-4 pb-3 mb-4 border-b border-[var(--border-subtle)]">
+          {heading && <div className="text-base font-bold font-sans tracking-tight">{heading}</div>}
+          {action && <div className="text-xs">{action}</div>}
+        </header>
+      )}
+      <div>{children}</div>
+    </section>
   );
 }
+
+export default Panel;

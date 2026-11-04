@@ -5,8 +5,9 @@
 @source "../lib/**/*.{ts,tsx}";
 
 @theme {
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-cabin), system-ui, sans-serif;
+  --font-hand: var(--font-caveat), cursive, sans-serif;
+  --font-mono: ui-monospace, monospace;
 
   --radius: 2px;
   --radius-sm: 2px;
@@ -14,34 +15,34 @@
 }
 
 /**
- * Design tokens.
- *
- * Every component reads these through `var(--token)` rather than a Tailwind colour class, which is
- * what lets a project change its whole palette from `lib/app-config.ts`: the root layout writes
- * `--accent` inline, overriding the default below. Nothing else needs editing per project.
+ * Design tokens — Pinboard (Archetype AT: Corkboard)
+ * Ground: #D98BA4, Ink: #2E0D18, Accent: #1D3557
  */
 :root {
-  --bg-base: #0A0A0A;
-  --bg-surface: #111111;
-  --bg-elevated: #181818;
-  --bg-overlay: #1F1F1F;
-  --border-subtle: #1E1E1E;
-  --border-default: #2A2A2A;
-  --border-strong: #383838;
-  --text-primary: #EBEBEB;
-  --text-secondary: #888888;
-  --text-tertiary: #555555;
-  --accent: #00E5CC;
-  --success: #1DB954;
-  --warning: #F5A623;
-  --danger: #E53E3E;
-  /* Wallet menu: opaque, contrast-checked (scripts/check-ui-contract.py). Redefine per project for ITS ground. */
-  --menu-bg: #181818;
-  --menu-fg: #EBEBEB;
-  --menu-muted: #A8A8A8;
-  --menu-border: #3A3A3A;
-  --menu-hover-bg: #262626;
-  --menu-danger: #FF8A8A;
+  --bg-base: #D98BA4;
+  --bg-surface: #FFF4F7;
+  --bg-elevated: #FCE8EE;
+  --bg-overlay: #F5D3DE;
+  --border-subtle: #C17990;
+  --border-default: #A9687D;
+  --border-strong: #2E0D18;
+  --text-primary: #2E0D18;
+  --text-secondary: #481B2B;
+  --text-tertiary: #6E3F4F;
+  --text-muted: #542937;
+  --accent: #1D3557;
+  --accent-ink: #FFFFFF;
+  --success: #1F7A3D;
+  --danger: #B3261E;
+  --warning: #8A5A00;
+
+  /* Wallet menu tokens from Spec §0 */
+  --menu-bg: #FFFFFF;
+  --menu-fg: #2E0D18;
+  --menu-muted: #826E74;
+  --menu-border: #D5CFD1;
+  --menu-hover-bg: #EEECED;
+  --menu-danger: #B3261E;
 }
 
 @layer base {
@@ -56,7 +57,10 @@
   }
 
   body {
-    background: var(--bg-base);
+    background-color: var(--bg-base);
+    /* Cork pattern texture in margins only */
+    background-image: radial-gradient(rgba(46, 13, 24, 0.08) 1px, transparent 0);
+    background-size: 16px 16px;
     color: var(--text-primary);
     font-family: var(--font-sans);
     min-height: 100%;
@@ -69,16 +73,34 @@
   }
 }
 
-/* Touch targets
- *
- * The interface is deliberately dense, and at 26px tall a `size="sm"` button is comfortable with a
- * mouse and a coin-flip with a thumb. `pointer: coarse` matches touch input rather than screen
- * width, so this raises the hit area exactly where it is needed and leaves mouse density
- * untouched, including on a small laptop window.
- *
- * 44px is Apple's minimum; Android asks for 48dp. Padding rather than height, so a control that is
- * already large enough is not stretched.
- */
+/* Paper Pin Note on Corkboard */
+.pin-note {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  box-shadow: 2px 4px 10px rgba(46, 13, 24, 0.15), 0px 1px 2px rgba(46, 13, 24, 0.2);
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pin-note:hover {
+  transform: scale(1.02) !important;
+  box-shadow: 4px 8px 16px rgba(46, 13, 24, 0.22);
+  z-index: 10;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin-note {
+    transform: none !important;
+  }
+}
+
+.font-note {
+  font-family: var(--font-hand);
+  font-size: 1.25rem;
+  line-height: 1.35;
+}
+
 @media (pointer: coarse) {
   button,
   [role="button"],
@@ -90,71 +112,11 @@
 
   input,
   textarea {
-    /* Anything under 16px makes iOS Safari zoom the page on focus, and it does not zoom back. */
     font-size: 16px;
   }
 }
 
-/* Nothing should be able to scroll the page sideways. A single overflowing address or hash
- * otherwise shifts the whole layout and there is no obvious culprit. */
 html,
 body {
   overflow-x: hidden;
-}
-
-::selection {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  color: var(--accent);
-}
-
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-base);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 2px;
-}
-
-.mono {
-  font-family: var(--font-mono);
-  letter-spacing: 0;
-}
-
-/* Toast entry. Radix drives the data-state; without the keyframes the toast simply appears. */
-@keyframes slideIn {
-  from { transform: translateX(8px); opacity: 0; }
-  to   { transform: translateX(0);   opacity: 1; }
-}
-@keyframes swipeOut {
-  to { transform: translateX(100%); opacity: 0; }
-}
-
-@keyframes shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
-}
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--bg-surface) 25%,
-    var(--bg-elevated) 50%,
-    var(--bg-surface) 75%
-  );
-  background-size: 800px 100%;
-  animation: shimmer 1.6s ease-in-out infinite;
-  border-radius: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
 }
